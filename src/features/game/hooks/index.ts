@@ -1,0 +1,1 @@
+export {useGameCore} from './useGameCore';

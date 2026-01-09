@@ -1,0 +1,13 @@
+
+.gameContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 345px;
+}
+
+@media (max-width: 767px) {
+    .gameContainer{
+        width: 277px;
+    }
+}

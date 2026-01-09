@@ -1,0 +1,13 @@
+
+.container {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    grid-template-rows: repeat(10, 1fr);
+    gap: 5px;
+}
+
+@media (max-width: 767px) {
+    .container{
+        gap: 3px;
+    }
+}

@@ -1,0 +1,28 @@
+
+.buttonContainer {
+    width: 30px;
+    height: 30px;
+    outline: none;
+    border: none;
+    background-color: #4040ff;
+    cursor: pointer;
+}
+
+.active{
+    background-color: yellow;
+}
+
+.success{
+    background-color: green;
+}
+
+.error{
+    background-color: #b10000;
+}
+
+@media (max-width: 767px) {
+    .buttonContainer{
+        width: 25px;
+        height: 25px;
+    }
+}

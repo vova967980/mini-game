@@ -1,0 +1,30 @@
+# dependencies
+node_modules
+
+# build output
+dist
+build
+coverage
+
+# vite / tooling
+.vite
+.vscode
+.idea
+
+# env files
+.env
+.env.*
+!.env.example
+
+# logs
+*.log
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# generated files
+*.min.js
+*.min.css
+
+# cache
+.eslintcache

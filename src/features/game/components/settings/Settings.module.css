@@ -1,0 +1,22 @@
+
+.field{
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    margin-bottom: 10px;
+}
+
+.field input{
+    width: 100%;
+    max-width: 100%;
+    padding: 5px;
+    box-sizing: border-box;
+}
+
+.error{
+    color: red;
+    min-height: 24px;
+    white-space: pre-wrap;
+    text-align: left;
+}
