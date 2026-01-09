@@ -1,4 +1,4 @@
-import { type FC, useState } from 'react';
+import { type FC, useCallback, useState } from 'react';
 import { GameField, ScorePanel, Settings, SquareButton } from './components';
 import { useGameCore } from './hooks';
 import styles from './Game.module.css';
@@ -8,6 +8,10 @@ import { ResultsPopup } from './components/result-popup';
 export const Game: FC = () => {
     const [gameSpeed, setGameSpeed] = useState<GameSpeed>(null);
     const [isOpenResults, setIsOpenResults] = useState<boolean>(false);
+
+    const onResultsCallback = useCallback(() => {
+        setIsOpenResults(true);
+    }, []);
 
     const {
         onClickCell,
@@ -19,7 +23,7 @@ export const Game: FC = () => {
         winner,
     } = useGameCore({
         gameSpeed,
-        onResultsCallback: () => setIsOpenResults(true),
+        onResultsCallback,
     });
 
     return (

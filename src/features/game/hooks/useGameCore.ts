@@ -1,134 +1,109 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useReducer, useRef } from 'react';
 import type {
-    GameCellsList,
-    GameScoreType,
     GameSpeed,
-    WinnerType,
 } from '../types';
-import { generateGameCells } from '../utils';
+import { createInitialGameState, gameCoreReducer, pickNextCellIndex } from '../model';
 
 type UseGameCoreProps = {
     gameSpeed: GameSpeed;
     onResultsCallback: () => void;
 };
 
-const GAME_WIN_SCORE = 10;
-
 export const useGameCore = ({
     gameSpeed,
     onResultsCallback,
 }: UseGameCoreProps) => {
-    const [cells, setCells] = useState<GameCellsList>(generateGameCells());
-    const [activeIndex, setActiveIndex] = useState<number | null>(null);
-    const [isRunning, setIsRunning] = useState<boolean>(false);
-    const [score, setScore] = useState<GameScoreType>({
-        player: 0,
-        computer: 0,
-    });
-    const [winner, setWinner] = useState<WinnerType>(null);
-
+    const [state, dispatch] = useReducer(
+        gameCoreReducer,
+        undefined,
+        createInitialGameState,
+    );
     const timeoutRef = useRef<number | null>(null);
 
-    const stopTimers = () => {
+    const stopTimers = useCallback(() => {
         if (timeoutRef.current != null) {
             window.clearTimeout(timeoutRef.current);
             timeoutRef.current = null;
         }
-    };
+    }, []);
 
-    const pickNextCell = useCallback(() => {
-        const available: number[] = [];
-        for (let i = 0; i < cells.length; i++)
-            if (cells[i] === 'idle') available.push(i);
-        if (available.length === 0) return null;
+    // If game is running and no active cell - pick new cell
+    useEffect(() => {
+        if (!state.isRunning) return;
+        if (state.winner) return;
+        if (gameSpeed == null) return;
+        if (state.activeIndex != null) return;
 
-        return available[Math.floor(Math.random() * available.length)];
-    }, [cells]);
+        const next = pickNextCellIndex(state.cells);
+        if (next == null) return;
 
-    const startRound = useCallback(() => {
-        if (!isRunning || winner || gameSpeed == null) return;
+        dispatch({ type: 'ACTIVATE_NEXT', index: next });
+    }, [
+        state.isRunning,
+        state.winner,
+        state.activeIndex,
+        state.cells,
+        gameSpeed,
+    ]);
+
+    // If active cell exist - set timer on miss
+    useEffect(() => {
+        if (!state.isRunning) return;
+        if (state.winner) return;
+        if (gameSpeed == null) return;
+        if (state.activeIndex == null) return;
 
         stopTimers();
-        const nextIndex = pickNextCell();
-
-        if (nextIndex === null) return;
-
-        setActiveIndex(nextIndex);
-
         timeoutRef.current = window.setTimeout(() => {
-            setCells((prev) => {
-                const newCells = [...prev];
-                newCells[nextIndex] = 'miss';
-                return newCells;
-            });
-            setScore((prev) => ({ ...prev, computer: prev.computer + 1 }));
-            setActiveIndex(null);
+            dispatch({ type: 'MISS_ACTIVE' });
         }, gameSpeed);
-    }, [cells, gameSpeed, isRunning, winner]);
 
-    useEffect(() => {
-        if (!isRunning) return;
-        if (winner) return;
-        if (activeIndex === null) startRound();
-    }, [isRunning, winner, activeIndex, startRound]);
+        return () => stopTimers();
+    }, [
+        state.isRunning,
+        state.winner,
+        state.activeIndex,
+        gameSpeed,
+        stopTimers,
+    ]);
 
+    // If winner exist - reset timers + trigger callback
     useEffect(() => {
-        if (score.player >= GAME_WIN_SCORE) setWinner('player');
-        if (score.computer >= GAME_WIN_SCORE) setWinner('computer');
-    }, [score]);
-
-    useEffect(() => {
-        if (winner) {
-            stopTimers();
-            setIsRunning(false);
-            setActiveIndex(null);
-            onResultsCallback();
-        }
-    }, [winner]);
+        if (!state.winner) return;
+        stopTimers();
+        onResultsCallback();
+    }, [state.winner, stopTimers, onResultsCallback]);
 
     const onStart = useCallback(() => {
-        if (gameSpeed === null) return;
-        setWinner(null);
-        setScore({ player: 0, computer: 0 });
-        setCells(generateGameCells());
-        setIsRunning(true);
-        setActiveIndex(null);
-    }, [gameSpeed]);
+        if (gameSpeed == null) return;
+        stopTimers();
+        dispatch({ type: 'START' });
+    }, [gameSpeed, stopTimers]);
 
     const onClickCell = useCallback(
         (index: number) => {
-            if (!isRunning || winner) return;
-            if (index !== activeIndex) return;
+            if (!state.isRunning || state.winner) return;
+            if (index !== state.activeIndex) return;
 
             stopTimers();
-            setCells((prev) => {
-                const newCells = [...prev];
-                newCells[index] = 'success';
-                return newCells;
-            });
-            setScore((prev) => ({ ...prev, player: prev.player + 1 }));
-            setActiveIndex(null);
+            dispatch({ type: 'HIT_ACTIVE' });
         },
-        [activeIndex, isRunning, winner],
+        [state.isRunning, state.winner, state.activeIndex, stopTimers],
     );
 
     const resetGame = useCallback(() => {
         stopTimers();
-        setIsRunning(false);
-        setWinner(null);
-        setScore({ player: 0, computer: 0 });
-        setActiveIndex(null);
-        setCells(generateGameCells());
-    }, []);
+        dispatch({ type: 'RESET' });
+    }, [stopTimers]);
 
     return {
-        isRunning,
-        cells,
+        isRunning: state.isRunning,
+        cells: state.cells,
         onStart,
         onClickCell,
-        score,
+        score: state.score,
         resetGame,
-        activeIndex,
-        winner,
+        activeIndex: state.activeIndex,
+        winner: state.winner,
     };
 };
